@@ -1,0 +1,232 @@
+import cv2
+import matplotlib.pyplot as plt
+import os
+
+# =====================================================
+# Helper Function: Display frame in Spyder PLOTS pane
+# =====================================================
+def show_frame_spyder(frame, mode="color"):
+    plt.clf()
+    if mode == "gray":
+        plt.imshow(frame, cmap='gray')
+    else:
+        plt.imshow(frame)
+    plt.axis("off")
+    plt.pause(0.001)
+
+
+# =====================================================
+# 1. Play Video (Color / Gray) - Spyder Version
+# =====================================================
+def play_video_spyder(path, mode="color"):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error opening video")
+        return
+
+    plt.ion()  
+    plt.figure()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if mode == "gray":
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            show_frame_spyder(frame, "gray")
+        else:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            show_frame_spyder(frame, "color")
+
+    cap.release()
+    plt.ioff()
+    plt.close()
+
+
+# =====================================================
+# 2. Extract Frames
+# =====================================================
+def extract_frames(path, output_folder="frames_output"):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error opening video")
+        return
+
+    os.makedirs(output_folder, exist_ok=True)
+
+    frame_no = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        cv2.imwrite(f"{output_folder}/frame_{frame_no}.jpg", frame)
+        frame_no += 1
+
+    print(f"Total frames saved: {frame_no}")
+    cap.release()
+
+
+# =====================================================
+# 3. Slow Down Video
+# =====================================================
+def slow_down_video(path, factor=2):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error opening video")
+        return
+
+    plt.ion()
+    plt.figure()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        show_frame_spyder(frame)
+
+        plt.pause(0.05 * factor)   # slow down
+
+    cap.release()
+    plt.ioff()
+    plt.close()
+
+
+# =====================================================
+# 4. Speed Up Video
+# =====================================================
+def speed_up_video(path, factor=2):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error opening video")
+        return
+
+    plt.ion()
+    plt.figure()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        show_frame_spyder(frame)
+
+        plt.pause(0.05 / factor)   # speed up
+
+    cap.release()
+    plt.ioff()
+    plt.close()
+
+
+# =====================================================
+# 5. Reverse Video
+# =====================================================
+def reverse_video(path):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error opening video")
+        return
+
+    frames = []
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+
+    plt.ion()
+    plt.figure()
+
+    for frame in reversed(frames):
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        show_frame_spyder(frame)
+
+    plt.ioff()
+    plt.close()
+    cap.release()
+
+
+# =====================================================
+# 6. Loop Video
+# =====================================================
+def loop_video(path, loops=3):
+    for _ in range(loops):
+        play_video_spyder(path, "color")
+
+
+# =====================================================
+# 7. Display Video Info
+# =====================================================
+def display_video_info(path):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error opening video")
+        return
+
+    print("\n--- VIDEO INFORMATION ---")
+    print("Frame Width :", cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    print("Frame Height:", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print("FPS         :", cap.get(cv2.CAP_PROP_FPS))
+    print("Total Frames:", cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    print("Duration (s):", cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS))
+    print("--------------------------------")
+
+    cap.release()
+
+
+# =====================================================
+# MAIN MENU
+# =====================================================
+video_path = input("Enter video path: ")
+
+while True:
+    print("\n========== VIDEO MENU ==========")
+    print("1. Play Video")
+    print("2. Extract Frames from Video")
+    print("3. Slow Down Video")
+    print("4. Speed Up Video")
+    print("5. Reverse Video")
+    print("6. Loop Video")
+    print("7. Display Video Info")
+    print("8. Exit Program")
+    print("================================")
+
+    choice = int(input("Enter your choice: "))
+
+    if choice == 1:
+        print("\n1. Color\n2. GrayScale")
+        sub = int(input("Choose mode: "))
+        if sub == 1:
+            play_video_spyder(video_path, "color")
+        else:
+            play_video_spyder(video_path, "gray")
+
+    elif choice == 2:
+        extract_frames(video_path)
+
+    elif choice == 3:
+        slow_down_video(video_path)
+
+    elif choice == 4:
+        speed_up_video(video_path)
+
+    elif choice == 5:
+        reverse_video(video_path)
+
+    elif choice == 6:
+        loop_video(video_path)
+
+    elif choice == 7:
+        display_video_info(video_path)
+
+    elif choice == 8:
+        print("Exiting Program...")
+        break
+
+    else:
+        print("Invalid Choice! Try Again.")
