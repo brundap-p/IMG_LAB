@@ -1,0 +1,162 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+#------------------------------
+# Helper function to display images
+#------------------------------
+def show(title, img):
+    plt.figure(figsize=(6,6))
+    if len(img.shape) == 2:
+        plt.imshow(img, cmap='gray')
+    else:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(img)
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
+#------------------------------
+# User-defined FILTER FUNCTIONS
+#------------------------------
+
+# User-defined Mean Filter
+def mean_filter(img, k=3):
+    kernel = np.ones((k, k), np.float32) / (k * k)
+    return cv2.filter2D(img, -1, kernel)
+
+# Harmonic Mean Filter
+def harmonic_mean(img, k=3):
+    img = img.astype(np.float32)
+    padded = cv2.copyMakeBorder(img, k//2, k//2, k//2, k//2, cv2.BORDER_REFLECT)
+    result = np.zeros_like(img)
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            window = padded[i:i+k, j:j+k]
+            result[i, j] = (k*k) / np.sum(1.0 / (window + 1e-9))
+
+    return result.astype(np.uint8)
+
+# Geometric Mean Filter
+def geometric_mean(img, k=3):
+    img = img.astype(np.float32)
+    padded = cv2.copyMakeBorder(img, k//2, k//2, k//2, k//2, cv2.BORDER_REFLECT)
+    result = np.zeros_like(img)
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            window = padded[i:i+k, j:j+k]
+            result[i, j] = np.exp(np.mean(np.log(window + 1e-9)))
+
+    return result.astype(np.uint8)
+
+# Min & Max Filter
+def min_filter(img, k=3):
+    return cv2.erode(img, np.ones((k, k)))
+
+def max_filter(img, k=3):
+    return cv2.dilate(img, np.ones((k, k)))
+
+# Percentile Filter (e.g., 40th percentile)
+def percentile_filter(img, k=3, p=40):
+    img = img.astype(np.float32)
+    padded = cv2.copyMakeBorder(img, k//2, k//2, k//2, k//2, cv2.BORDER_REFLECT)
+    result = np.zeros_like(img)
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            window = padded[i:i+k, j:j+k].flatten()
+            result[i, j] = np.percentile(window, p)
+
+    return result.astype(np.uint8)
+
+#------------------------------
+# MAIN PROGRAM
+#------------------------------
+
+# Image input
+path = input("Enter image path: ")
+img = cv2.imread(path)
+
+if img is None:
+    print("Error: Invalid image path!")
+    exit()
+
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+while True:
+    print("\n--- PROGRAM 4 : SPATIAL FILTERING ---")
+    print("1. Original Image")
+    print("2. Linear Filters")
+    print("3. Non-Linear Filters")
+    print("4. Exit")
+
+    ch = int(input("Choose an option: "))
+
+    if ch == 1:
+        show("Original Image", img)
+
+    elif ch == 2:
+        print("\n--- LINEAR FILTERS ---")
+        print("1. Mean Filter")
+        print("2. Gaussian Filter")
+        print("3. Harmonic Mean")
+        print("4. Geometric Mean")
+        sub = int(input("Enter choice: "))
+
+        if sub == 1:
+            out = mean_filter(gray)
+            show("Mean Filter", out)
+
+        elif sub == 2:
+            out = cv2.GaussianBlur(gray, (5,5), 1.0)
+            show("Gaussian Filter", out)
+
+        elif sub == 3:
+            out = harmonic_mean(gray)
+            show("Harmonic Mean Filter", out)
+
+        elif sub == 4:
+            out = geometric_mean(gray)
+            show("Geometric Mean Filter", out)
+
+        else:
+            print("Invalid option")
+
+    elif ch == 3:
+        print("\n--- NON-LINEAR FILTERS ---")
+        print("1. Median Filter")
+        print("2. Bilateral Filter")
+        print("3. Min & Max Filter")
+        print("4. Percentile Filter")
+        sub = int(input("Enter choice: "))
+
+        if sub == 1:
+            out = cv2.medianBlur(gray, 5)
+            show("Median Filter", out)
+
+        elif sub == 2:
+            out = cv2.bilateralFilter(gray, 9, 75, 75)
+            show("Bilateral Filter", out)
+
+        elif sub == 3:
+            min_img = min_filter(gray)
+            max_img = max_filter(gray)
+            show("Min Filter", min_img)
+            show("Max Filter", max_img)
+
+        elif sub == 4:
+            p = int(input("Enter percentile (0-100): "))
+            out = percentile_filter(gray, p=p)
+            show(f"{p}th Percentile Filter", out)
+
+        else:
+            print("Invalid option")
+
+    elif ch == 4:
+        print("Exiting Program...")
+        break
+
+    else:
+        print("Invalid choice! Try again.")
