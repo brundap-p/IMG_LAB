@@ -1,0 +1,125 @@
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+
+# Function to display image in Jupyter
+def show_image(img, title="Image", gray=False):
+    plt.figure(figsize=(6,6))
+    if gray:
+        plt.imshow(img, cmap='gray')
+    else:
+        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+   
+# Resize function
+def resize_image(img):
+    while True:
+        print("\nResize Options:")
+        print("1. Upscale")
+        print("2. Downscale")
+        print("3. Vertical scale")
+        print("4. Horizontal scale")
+        print("5. Exit to Main Menu")
+        choice = int(input("Enter choice: "))
+
+        h, w = img.shape[:2]
+
+        if choice == 1:
+            img = cv2.resize(img, (w*2, h*2))
+            show_image(img, title="Upscaled Image", gray=len(img.shape)==2)
+        elif choice == 2:
+            img = cv2.resize(img, (w//2, h//2))
+            show_image(img, title="Downscaled Image", gray=len(img.shape)==2)
+        elif choice == 3:
+            img = cv2.resize(img, (w, h*2))
+            show_image(img, title="Vertical Scaled Image", gray=len(img.shape)==2)
+        elif choice == 4:
+            img = cv2.resize(img, (w*2, h))
+            show_image(img, title="Horizontal Scaled Image", gray=len(img.shape)==2)
+        elif choice == 5:
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+    return img
+
+# Rotate function
+def rotate_image(img):
+    while True:
+        try:
+            angle = float(input("Enter rotation angle (0–360 degrees): "))
+            if -360 <= angle <= 360:
+                break
+            else:
+                print("Please enter a value between 0 and 360.")
+        except ValueError:
+            print("Invalid input! Please enter a numeric value.")
+   
+    h, w = img.shape[:2]
+    center = (w // 2, h // 2)
+    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotated = cv2.warpAffine(img, rotation_matrix, (w, h))
+
+    gray = len(rotated.shape) == 2
+    show_image(rotated, title=f"Rotated Image ({angle}°)", gray=gray)
+    return rotated
+
+# Function to select new image with type choice (no conversion)
+def select_new_image():
+    print("\nSelect Image Type:")
+    print("1. Binary")
+    print("2. Grayscale")
+    print("3. Color")
+    choice = int(input("Enter choice: "))
+
+    path = input("Enter image path: ").strip().strip('"')  # remove extra quotes/spaces
+
+    if choice == 1 or choice == 2:
+        # Load as grayscale
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    elif choice == 3:
+        # Load as color
+        img = cv2.imread(path, cv2.IMREAD_COLOR)
+    else:
+        print("Invalid choice")
+        return None
+
+    if img is None:
+        print("Image not found! Check your path.")
+        return None
+
+    # Display image
+    gray = len(img.shape) == 2
+    show_image(img, title="Selected Image", gray=gray)
+    return img
+
+## Main menu
+def main():
+    img = select_new_image()
+    if img is None:
+        return
+
+    while True:
+        print("\nMain Menu:")
+        print("1. Resize")
+        print("2. Rotate")
+        print("3. Select new image")
+        print("4. Exit")
+        choice = int(input("Enter choice: "))
+
+        if choice == 1:
+            img = resize_image(img)
+        elif choice == 2:
+            img = rotate_image(img)
+        elif choice == 3:
+            img = select_new_image()
+            if img is None:
+                print("Returning to previous image...")
+        elif choice == 4:
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice")
+main()
