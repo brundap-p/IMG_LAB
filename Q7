@@ -59,7 +59,7 @@ else:
         # --- 2. Reconstruction ---
         elif choice == 2:
             if coeffs is None:
-                print("❗ First decompose the image (Option 1).")
+                print(" First decompose the image (Option 1).")
             else:
                 reconstructed = wavelet_reconstruct(coeffs)
                 print("Image reconstructed successfully!")
