@@ -1,0 +1,180 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+def display_image(title, img):
+    # This is used for simple display (Choice 1)
+    if len(img.shape) == 3 and img.shape[2] == 3:
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(img_rgb)
+    else:
+        plt.imshow(img, cmap='gray')
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
+def contrast_stretching(img):
+    in_min = np.min(img)
+    in_max = np.max(img)
+    if in_max == in_min:
+        return img.copy() 
+    stretched = ((img - in_min) * 255 / (in_max - in_min)).astype(np.uint8)
+    return stretched
+
+def normalize(img):
+    norm_img = np.zeros_like(img, dtype=np.float32)
+    cv2.normalize(img, norm_img, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+    return norm_img.astype(np.uint8)
+
+def histogram_equalization(img):
+    return cv2.equalizeHist(img)
+
+def process_color_image(img, func):
+    """
+    Apply image processing function to the Luminance (Y) channel of a BGR image.
+    """
+    img_ycrcb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    y, cr, cb = cv2.split(img_ycrcb)
+    
+    y_processed = func(y)
+    
+    img_ycrcb_processed = cv2.merge([y_processed, cr, cb])
+    img_processed = cv2.cvtColor(img_ycrcb_processed, cv2.COLOR_YCrCb2BGR)
+    return img_processed
+
+def plot_image_and_histogram(img, title):
+    # Used for individual display (Choices 2, 3, 4)
+    plt.figure(figsize=(10,4))
+    
+    plt.subplot(1,2,1)
+    if len(img.shape) == 3 and img.shape[2] == 3:
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(img_rgb)
+        img_for_hist = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)[:,:,0]
+        hist_title = 'Histogram (Y Channel)'
+    else:
+        plt.imshow(img, cmap='gray')
+        img_for_hist = img
+        hist_title = 'Histogram'
+
+    plt.title(title)
+    plt.axis('off')
+    
+    plt.subplot(1,2,2)
+    plt.hist(img_for_hist.ravel(), bins=256, range=(0,255), color='black')
+    plt.title(hist_title)
+    plt.xlim([0,255])
+    
+    plt.tight_layout()
+    plt.show()
+
+def plot_combined_results(image_list):
+    """
+    Displays all images in the list in one figure with 2 rows:
+    Images in the first row, Histograms in the second row.
+    """
+    N = len(image_list)
+    if N == 0:
+        print("No images to display in combined view.")
+        return
+
+    # Create figure with 2 rows and N columns
+    fig, axes = plt.subplots(2, N, figsize=(4 * N, 8))
+    fig.suptitle('Combined Image Processing Results', fontsize=14)
+    
+    # Handle the case where N=1 (subplots returns a 2x1 array)
+    if N == 1:
+        axes = axes.reshape(2, 1)
+
+    for i, (title, img) in enumerate(image_list):
+        # --- First Row: Images (axes[0, i]) ---
+        ax_img = axes[0, i]
+
+        # Prepare image for display and get histogram data
+        if len(img.shape) == 3 and img.shape[2] == 3:
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            ax_img.imshow(img_rgb)
+            img_for_hist = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)[:,:,0]
+        else:
+            ax_img.imshow(img, cmap='gray')
+            img_for_hist = img
+
+        ax_img.set_title(title)
+        ax_img.axis('off')
+
+        # --- Second Row: Histograms (axes[1, i]) ---
+        ax_hist = axes[1, i]
+        ax_hist.hist(img_for_hist.ravel(), bins=256, range=(0, 255), color='black')
+        ax_hist.set_title('Hist')
+        ax_hist.set_xlim([0, 255])
+        ax_hist.set_ylim(bottom=0)
+        
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Adjust to make space for suptitle
+    plt.show()
+
+def main():
+    path = input("Enter image path: ")
+    img = cv2.imread(path, cv2.IMREAD_COLOR)
+
+    if img is None:
+        print("Could not open or find the image.")
+        return
+
+    contrast_img = None
+    norm_img = None
+    hist_eq_img = None
+
+    while True:
+        print("\nMenu:")
+        print("1. Display Original Image ")
+        print("2. Apply Contrast Stretching ")
+        print("3. Apply Normalization ")
+        print("4. Apply Histogram Equalization ")
+        print("5. Display Combined Applied Images with Histogram")
+        print("6. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            display_image("Original Image", img)
+
+        elif choice == '2':
+            contrast_img = process_color_image(img, contrast_stretching)
+            print("Contrast stretching applied. Displaying individually...")
+            plot_image_and_histogram(contrast_img, "Contrast Stretching")
+
+        elif choice == '3':
+            norm_img = process_color_image(img, normalize)
+            print("Normalization applied. Displaying individually...")
+            plot_image_and_histogram(norm_img, "Normalization")
+
+        elif choice == '4':
+            hist_eq_img = process_color_image(img, histogram_equalization)
+            print("Histogram equalization applied. Displaying individually...")
+            plot_image_and_histogram(hist_eq_img, "Histogram Equalization")
+
+        elif choice == '5':
+            # Collect all images that have been generated, starting with the Original
+            image_list = [("Original", img)]
+            if contrast_img is not None:
+                image_list.append(("Contrast Stretch", contrast_img))
+            if norm_img is not None:
+                image_list.append(("Normalization", norm_img))
+            if hist_eq_img is not None:
+                image_list.append(("Hist Equalization", hist_eq_img))
+            
+            if len(image_list) == 1:
+                 print("Showing Original Image result. Apply operations (2, 3, or 4) to combine more images.")
+
+            # Display all collected images in a single combined plot
+            print("Displaying all available results in one figure...")
+            plot_combined_results(image_list)
+
+        elif choice == '6':
+            print("Exiting.")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
