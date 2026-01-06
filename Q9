@@ -1,0 +1,106 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Dec 24 19:36:46 2025
+
+@author: MEGHANA
+"""
+
+#C:\Users\MEGHANA\OneDrive\Desktop\images  doc\color.jpg
+#C:\Users\MEGHANA\OneDrive\Desktop\images  doc\greyscale.jpg
+#C:\Users\MEGHANA\OneDrive\Desktop\images  doc\binary.png
+
+# -----------------------------------------
+# PROGRAM 9: FEATURE DETECTION (Matplotlib)
+# Harris Corner, MSER, SIFT
+# -----------------------------------------
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+# -------------------------
+# USER INPUT: IMAGE PATH
+# -------------------------
+image_path = input("Enter image path: ").strip()
+
+if not os.path.exists(image_path):
+    raise FileNotFoundError("❌ Image path not found")
+
+# Read image
+image = cv2.imread(image_path)
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+while True:
+    print("\n===== FEATURE DETECTION MENU =====")
+    print("1. Harris Corner Detection")
+    print("2. MSER Feature Detection")
+    print("3. SIFT Feature Detection")
+    print("4. Exit")
+
+    choice = input("Enter your choice (1–4): ").strip()
+
+    # -----------------------------------------
+    # 1. HARRIS CORNER DETECTION
+    # -----------------------------------------
+    if choice == "1":
+        img_harris = image_rgb.copy()
+        gray_float = np.float32(gray)
+
+        harris = cv2.cornerHarris(gray_float, 2, 3, 0.04)
+        harris = cv2.dilate(harris, None)
+
+        img_harris[harris > 0.01 * harris.max()] = [255, 0, 0]
+
+        plt.figure(figsize=(6, 6))
+        plt.imshow(img_harris)
+        plt.title("Harris Corner Detection")
+        plt.axis("off")
+        plt.show()
+
+    # -----------------------------------------
+    # 2. MSER FEATURE DETECTION
+    # -----------------------------------------
+    elif choice == "2":
+        mser = cv2.MSER_create()
+        regions, _ = mser.detectRegions(gray)
+
+        img_mser = image_rgb.copy()
+        for region in regions:
+            hull = cv2.convexHull(region.reshape(-1, 1, 2))
+            cv2.polylines(img_mser, [hull], True, (0, 255, 0), 1)
+
+        plt.figure(figsize=(6, 6))
+        plt.imshow(img_mser)
+        plt.title("MSER Feature Detection")
+        plt.axis("off")
+        plt.show()
+
+    # -----------------------------------------
+    # 3. SIFT FEATURE DETECTION
+    # -----------------------------------------
+    elif choice == "3":
+        sift = cv2.SIFT_create()
+        keypoints, descriptors = sift.detectAndCompute(gray, None)
+
+        img_sift = cv2.drawKeypoints(
+            image_rgb, keypoints, None,
+            flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+        )
+
+        plt.figure(figsize=(6, 6))
+        plt.imshow(img_sift)
+        plt.title("SIFT Feature Detection")
+        plt.axis("off")
+        plt.show()
+
+    # -----------------------------------------
+    # 4. EXIT
+    # -----------------------------------------
+    elif choice == "4":
+        print("✅ Exiting program.")
+        break
+
+    else:
+        print("❌ Invalid choice. Please enter 1–4.")
