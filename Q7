@@ -1,0 +1,74 @@
+import cv2
+import pywt
+import numpy as np
+import matplotlib.pyplot as plt
+
+def show_image(title, img):
+    plt.figure(figsize=(5,5))
+    plt.imshow(img, cmap='gray')
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
+# --- Wavelet Decomposition ---
+def wavelet_decompose(img):
+    coeffs = pywt.wavedec2(img, 'haar', level=2)   # 2-level decomposition
+    return coeffs
+
+# --- Wavelet Reconstruction ---
+def wavelet_reconstruct(coeffs):
+    reconstructed = pywt.waverec2(coeffs, 'haar')
+    reconstructed = np.clip(reconstructed, 0, 255)
+    return reconstructed.astype(np.uint8)
+
+
+# ---------------- MAIN MENU PROGRAM ----------------
+print("Program 7: Multi-Resolution Image Decomposition and Reconstruction")
+print("-------------------------------------------------------------")
+
+# Load image
+img_path = input("Enter image path: ")
+image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+
+if image is None:
+    print("Error: Image not found!")
+else:
+    coeffs = None   # to store decomposition output
+
+    while True:
+        print("\nMenu:")
+        print("1. Decompose Image")
+        print("2. Reconstruct Image")
+        print("3. Exit")
+
+        choice = int(input("Enter choice: "))
+
+        # --- 1. Decomposition ---
+        if choice == 1:
+            coeffs = wavelet_decompose(image)
+            cA2, (cH2, cV2, cD2), (cH1, cV1, cD1) = coeffs
+
+            print("Image decomposed successfully!")
+
+            # Display sub-bands
+            show_image("Level 2 - Approximation (LL)", cA2)
+            show_image("Level 2 - Horizontal (LH)", cH2)
+            show_image("Level 2 - Vertical (HL)", cV2)
+            show_image("Level 2 - Diagonal (HH)", cD2)
+
+        # --- 2. Reconstruction ---
+        elif choice == 2:
+            if coeffs is None:
+                print("❗ First decompose the image (Option 1).")
+            else:
+                reconstructed = wavelet_reconstruct(coeffs)
+                print("Image reconstructed successfully!")
+                show_image("Reconstructed Image", reconstructed)
+
+        # --- 3. Exit ---
+        elif choice == 3:
+            print("Exiting program...")
+            break
+
+        else:
+            print("Invalid choice! Please try again.")
