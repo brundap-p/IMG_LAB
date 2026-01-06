@@ -1,0 +1,86 @@
+# -----------------------------------------
+# PROGRAM 8: IMAGE COMPRESSION USING WAVELETS
+# -----------------------------------------
+
+import cv2
+import numpy as np
+import pywt
+import matplotlib.pyplot as plt
+import os
+
+# -------------------------
+# USER INPUT (MENU STYLE)
+# -------------------------
+image_path = input("Enter image path: ").strip()
+
+if not os.path.exists(image_path):
+    raise FileNotFoundError("Image path not found")
+
+# -------------------------
+# THRESHOLD INPUT VALIDATION
+# -------------------------
+while True:
+    thresh_input = input("Enter the threshold value: ").strip()
+
+    if thresh_input == "":
+        print("Enter valid input value")
+        continue
+
+    try:
+        threshold = float(thresh_input)
+        if threshold <= 0:
+            print(" Enter valid input value")
+            continue
+        break
+    except ValueError:
+        print(" Enter valid input value")
+
+# -------------------------
+# READ IMAGE
+# -------------------------
+image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+if image is None:
+    raise ValueError("Unable to read image")
+
+image = image.astype(np.float32)
+
+# -------------------------
+# APPLY WAVELET TRANSFORM
+# -------------------------
+wavelet = 'haar'
+coeffs = pywt.dwt2(image, wavelet)
+LL, (LH, HL, HH) = coeffs
+
+# -------------------------
+# THRESHOLDING FUNCTION
+# -------------------------
+def thresholding(data, thresh):
+    return pywt.threshold(data, thresh, mode='hard')
+
+LL_t = thresholding(LL, threshold)
+LH_t = thresholding(LH, threshold)
+HL_t = thresholding(HL, threshold)
+HH_t = thresholding(HH, threshold)
+
+# -------------------------
+# RECONSTRUCT IMAGE
+# -------------------------
+compressed_image = pywt.idwt2((LL_t, (LH_t, HL_t, HH_t)), wavelet)
+
+# -------------------------
+# DISPLAY RESULTS
+# -------------------------
+plt.figure(figsize=(10, 5))
+
+plt.subplot(1, 2, 1)
+plt.imshow(image, cmap='gray')
+plt.title("Original Image")
+plt.axis('off')
+
+plt.subplot(1, 2, 2)
+plt.imshow(compressed_image, cmap='gray')
+plt.title("Compressed Image")
+plt.axis('off')
+
+plt.show()
