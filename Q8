@@ -1,7 +1,3 @@
-# -----------------------------------------
-# PROGRAM 8: IMAGE COMPRESSION USING WAVELETS
-# -----------------------------------------
-
 import cv2
 import numpy as np
 import pywt
