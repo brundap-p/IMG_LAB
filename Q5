@@ -1,0 +1,93 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+#-----------------------------------
+# Display function
+#-----------------------------------
+def show(title, img):
+    plt.figure(figsize=(6,6))
+    if len(img.shape) == 2:
+        plt.imshow(img, cmap='gray')
+    else:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(img)
+    plt.title(title)
+    plt.axis("off")
+    plt.show()
+
+#-----------------------------------
+# Homomorphic Filter Function
+#-----------------------------------
+def homomorphic_filter(img, low_gamma=0.5, high_gamma=2.0, cutoff=30, c=1):
+    img = img.astype(np.float32)
+    img = img + 1  # avoid log(0)
+    
+    # log transform
+    log_img = np.log(img)
+
+    # FFT
+    freq = np.fft.fft2(log_img)
+    freq_shift = np.fft.fftshift(freq)
+
+    # Create Homomorphic Filter Mask (Butterworth)
+    rows, cols = img.shape
+    u = np.arange(rows)
+    v = np.arange(cols)
+    u, v = np.meshgrid(u - rows//2, v - cols//2, indexing='ij')
+
+    D = np.sqrt(u**2 + v**2)
+    H = (high_gamma - low_gamma) * (1 - np.exp(-(D**2) / (2*(cutoff**2)))) + low_gamma
+
+    # Apply filter
+    filtered = freq_shift * H
+
+    # Inverse FFT
+    filtered_shift = np.fft.ifftshift(filtered)
+    inv_img = np.fft.ifft2(filtered_shift)
+    inv_img = np.real(inv_img)
+
+    # Exponential to reverse log
+    result = np.exp(inv_img) - 1
+    result = np.clip(result, 0, 255)
+
+    return result.astype(np.uint8)
+
+#-----------------------------------
+# Main Program
+#-----------------------------------
+
+# Get image path
+path = input("Enter image path: ")
+img = cv2.imread(path)
+
+if img is None:
+    print("Invalid image path!")
+    exit()
+
+while True:
+    print("\n--- PROGRAM 5 : HOMOMORPHIC FILTERING ---")
+    print("1. Grayscale Image")
+    print("2. Color Image")
+    print("3. Exit")
+    ch = int(input("Choose an option: "))
+
+    if ch == 1:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        out = homomorphic_filter(gray)
+        show("Grayscale - Homomorphic Filter Output", out)
+
+    elif ch == 2:
+        b, g, r = cv2.split(img)
+        b2 = homomorphic_filter(b)
+        g2 = homomorphic_filter(g)
+        r2 = homomorphic_filter(r)
+        out = cv2.merge([b2, g2, r2])
+        show("Color - Homomorphic Filter Output", out)
+
+    elif ch == 3:
+        print("Exiting Program...")
+        break
+
+    else:
+        print("Invalid choice! Try again.")
