@@ -1,0 +1,147 @@
+import cv2
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+
+# -------- Display Function using Matplotlib --------
+def show_image(title, img):
+    plt.figure(figsize=(6,6))
+    if len(img.shape) == 2:  # grayscale
+        plt.imshow(img, cmap='gray')
+    else:  # color image
+        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
+# -------- User Defined Transformations --------
+def negative_image(img):
+    return 255 - img
+
+def log_transformation(img):
+    c = 255 / np.log(1 + np.max(img))
+    log_image = c * (np.log(img + 1))
+    return np.array(log_image, dtype=np.uint8)
+
+def power_law_transformation(img, gamma=0.5):
+    normalized = img / 255.0
+    result = np.power(normalized, gamma)
+    return np.uint8(result * 255)
+
+def binary_thresholding(img):
+    _, binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+    return binary
+
+def intensity_slicing(img):
+    sliced = np.where((img > 100) & (img < 200), 255, img)
+    return np.uint8(sliced)
+
+# -------- Linear Filters --------
+def mean_filter(img):
+    return cv2.blur(img, (5,5))
+
+def gaussian_filter(img):
+    return cv2.GaussianBlur(img, (5,5), 0)
+
+def harmonic_mean_filter(img):
+    img = np.float32(img)
+    kernel_size = 3
+    pad = kernel_size // 2
+    padded = cv2.copyMakeBorder(img, pad, pad, pad, pad, cv2.BORDER_REFLECT)
+    result = np.zeros_like(img)
+    for i in range(pad, padded.shape[0]-pad):
+        for j in range(pad, padded.shape[1]-pad):
+            region = padded[i-pad:i+pad+1, j-pad:j+pad+1]
+            result[i-pad, j-pad] = 9 / np.sum(1.0 / (region + 1e-5))
+    return np.uint8(result)
+
+def geometric_mean_filter(img):
+    img = np.float32(img) + 1
+    kernel_size = 3
+    pad = kernel_size // 2
+    padded = cv2.copyMakeBorder(img, pad, pad, pad, pad, cv2.BORDER_REFLECT)
+    result = np.zeros_like(img)
+    for i in range(pad, padded.shape[0]-pad):
+        for j in range(pad, padded.shape[1]-pad):
+            region = padded[i-pad:i+pad+1, j-pad:j+pad+1]
+            product = np.prod(region)
+            result[i-pad, j-pad] = pow(product, 1.0 / (kernel_size**2))
+    result = result - 1
+    return np.uint8(result)
+
+# -------- Frequency Domain Filters --------
+def frequency_filter(img, filter_type="low", D0=30):
+    dft = cv2.dft(np.float32(img), flags=cv2.DFT_COMPLEX_OUTPUT)
+    dft_shift = np.fft.fftshift(dft)
+    rows, cols = img.shape
+    crow, ccol = rows // 2 , cols // 2
+
+    mask = np.zeros((rows, cols, 2), np.uint8)
+    if filter_type == "low":
+        mask[crow-D0:crow+D0, ccol-D0:ccol+D0] = 1
+    elif filter_type == "high":
+        mask[:] = 1
+        mask[crow-D0:crow+D0, ccol-D0:ccol+D0] = 0
+    elif filter_type == "band":
+        mask1 = np.zeros((rows, cols, 2), np.uint8)
+        mask1[crow-D0:crow+D0, ccol-D0:ccol+D0] = 1
+        mask2 = np.zeros((rows, cols, 2), np.uint8)
+        mask2[crow-2*D0:crow+2*D0, ccol-2*D0:ccol+2*D0] = 1
+        mask = mask2 - mask1
+
+    fshift = dft_shift * mask
+    f_ishift = np.fft.ifftshift(fshift)
+    img_back = cv2.idft(f_ishift)
+    img_back = cv2.magnitude(img_back[:,:,0], img_back[:,:,1])
+    img_back = cv2.normalize(img_back, None, 0, 255, cv2.NORM_MINMAX)
+    return np.uint8(img_back)
+
+# ------------- MAIN PROGRAM -------------
+path = input("Enter image path: ")
+img = cv2.imread(path, 0)
+
+while True:
+    print("\nMain Menu:\n1. Original Image\n2. Spatial Domain Filters\n3. Linear Filters\n4. Frequency Domain Filters\n5. Exit")
+    choice = int(input("Enter choice: "))
+
+    if choice == 1:
+        show_image("Original Image", img)
+
+    elif choice == 2:
+        print("\nSpatial Domain:\n1. Image Transformations\n2. Piecewise Linear Transformations\n3. Exit")
+        ch2 = int(input("Enter choice: "))
+
+        if ch2 == 1:
+            print("\n1. Negative\n2. Log Transformation\n3. Power Law Transformation")
+            t = int(input("Enter choice: "))
+            if t == 1: show_image("Negative Image", negative_image(img))
+            elif t == 2: show_image("Log Transform", log_transformation(img))
+            elif t == 3: show_image("Power Law Transform", power_law_transformation(img, gamma=0.4))
+
+        elif ch2 == 2:
+            print("\n1. Binary Thresholding\n2. Intensity Level Slicing")
+            t = int(input("Enter choice: "))
+            if t == 1: show_image("Binary Thresholding", binary_thresholding(img))
+            elif t == 2: show_image("Intensity Slicing", intensity_slicing(img))
+
+    elif choice == 3:
+        print("\nLinear Filters:\n1. Mean Filter\n2. Gaussian Filter\n3. Harmonic Mean\n4. Geometric Mean")
+        ch3 = int(input("Enter choice: "))
+        if ch3 == 1: show_image("Mean Filter", mean_filter(img))
+        elif ch3 == 2: show_image("Gaussian Filter", gaussian_filter(img))
+        elif ch3 == 3: show_image("Harmonic Mean Filter", harmonic_mean_filter(img))
+        elif ch3 == 4: show_image("Geometric Mean Filter", geometric_mean_filter(img))
+
+    elif choice == 4:
+        print("\nFrequency Domain:\n1. Low-pass Filter\n2. High-pass Filter\n3. Band-pass Filter\n4. Exit")
+        ch4 = int(input("Enter choice: "))
+        if ch4 == 1: show_image("Low-pass Filter", frequency_filter(img, "low"))
+        elif ch4 == 2: show_image("High-pass Filter", frequency_filter(img, "high"))
+        elif ch4 == 3: show_image("Band-pass Filter", frequency_filter(img, "band"))
+
+    elif choice == 5:
+        print("Exiting Program...")
+        break
+
+    else:
+        print("Invalid choice! Try again.")
