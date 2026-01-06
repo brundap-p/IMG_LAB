@@ -7,44 +7,32 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input, decode_predictions
 from tensorflow.keras.preprocessing import image
 
-# -------------------------
-# USER INPUT
-# -------------------------
+
 image_path = input("Enter image path: ").strip()
 
 if not os.path.exists(image_path):
-    raise FileNotFoundError("❌ Image path not found")
+    raise FileNotFoundError("Image path not found")
 
-# -------------------------
-# LOAD PRETRAINED VGG-19 MODEL
-# -------------------------
+
 model = VGG19(weights="imagenet")
 
-# -------------------------
-# LOAD AND PREPROCESS IMAGE
-# -------------------------
+
 img = image.load_img(image_path, target_size=(224, 224))
 img_array = image.img_to_array(img)
 img_array = np.expand_dims(img_array, axis=0)
 img_array = preprocess_input(img_array)
 
-# -------------------------
-# PREDICTION
-# -------------------------
+
 predictions = model.predict(img_array)
 decoded_preds = decode_predictions(predictions, top=3)[0]
 
-# -------------------------
-# DISPLAY IMAGE
-# -------------------------
+
 plt.imshow(img)
 plt.axis("off")
 plt.title("Input Image")
 plt.show()
 
-# -------------------------
-# DISPLAY RESULTS
-# -------------------------
-print("\n🔍 Top 3 Predictions:")
+
+print("\n Top 3 Predictions:")
 for i, (imagenet_id, label, confidence) in enumerate(decoded_preds, 1):
     print(f"{i}. {label} ({confidence*100:.2f}%)")
